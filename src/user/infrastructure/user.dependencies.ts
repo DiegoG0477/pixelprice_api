@@ -35,5 +35,5 @@ export const registerUserUseCase = new RegisterUserUseCase(
 
 
 export const registerUserController = new RegisterUserController(registerUserUseCase);
-export const loginUserController = new LoginUserController(loginUserUseCase);
+export const loginUserController = new LoginUserController(loginUserUseCase, mysqlUserRepository);
 
