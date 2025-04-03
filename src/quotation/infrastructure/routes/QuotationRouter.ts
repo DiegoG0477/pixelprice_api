@@ -40,7 +40,7 @@ quotationRouter.post(
 
 // GET quotations for a specific user (ensure user matches logged-in user)
 // Parameter ':userId' should match the logged-in user's ID passed by authMiddleware
-quotationRouter.get('/user/:userId', (req, res) => getQuotationsByUserIdController.run(req, res));
+quotationRouter.get('/user', (req, res) => getQuotationsByUserIdController.run(req, res));
 
 // GET to download the DOCX report for a specific quotation
 // Parameter ':id' is the quotation ID
