@@ -1,7 +1,6 @@
 import { INotificationService } from '../../../application/services/INotificationService';
 import { DeviceTokenRepository } from '../../../../device-token/domain/DeviceTokenRepository'; // Path to actual repo
 import { Quotation } from '../../../domain/entities/Quotation';
-import { INotificationService as IQuotationNotificationService } from '../../../application/services/INotificationService';
 import { FirebaseError } from 'firebase-admin/app';
 import * as admin from 'firebase-admin'; // Import admin
 
@@ -11,23 +10,13 @@ function isFirebaseError(error: unknown): error is FirebaseError {
     return typeof error === 'object' && error !== null && 'code' in error && 'message' in error;
 }
 
-
-export class FcmNotificationServiceAdapter implements IQuotationNotificationService {
+export class FcmNotificationServiceAdapter implements INotificationService {
 
     // Inject the *shared* DeviceTokenRepository instance
     constructor(
         private readonly deviceTokenRepository: DeviceTokenRepository,
-        private readonly fcmService?: INotificationService // Optional: Inject if reusing a more complex shared service
-        ) {
-         // Ensure Firebase is initialized (might be done centrally)
-         if (admin.apps.length === 0) {
-             console.warn("Firebase Admin SDK potentially not initialized before FcmNotificationServiceAdapter instantiation.");
-             // Consider initializing here or throwing an error if required upfront
-             // admin.initializeApp();
-         } else {
-             console.log("Firebase Admin SDK appears to be initialized.");
-         }
-    }
+        //private readonly fcmService?: INotificationService // Optional: Inject if reusing a more complex shared service
+        ) {}
 
     async sendNewQuotationNotification(quotation: Quotation): Promise<boolean> {
          if (admin.apps.length === 0) {

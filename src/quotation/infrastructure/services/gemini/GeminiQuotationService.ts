@@ -3,7 +3,7 @@ import {
     HarmCategory,
     HarmBlockThreshold,
     GenerationConfig,
-    Content, // Keep Content if used elsewhere, otherwise optional
+    //Content, // Keep Content if used elsewhere, otherwise optional
     Part // <--- Import the Part type
 } from "@google/generative-ai";
 import { IGeminiQuotationService, QuotationInputData } from "../../../application/services/IGeminiQuotationService";
