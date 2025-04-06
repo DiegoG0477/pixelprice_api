@@ -13,7 +13,7 @@ RUN npm install
 
 COPY pixelprice-firebase-admin.json ./
 
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/pixel-firebase-admin.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/pixelprice-firebase-admin.json
 
 COPY . .
 
