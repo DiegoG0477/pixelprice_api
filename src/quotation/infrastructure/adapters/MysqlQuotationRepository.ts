@@ -57,10 +57,10 @@ export class MysqlQuotationRepository implements QuotationRepository {
         }
     }
 
-    async getQuotationById(id: string): Promise<Quotation | null> {
+    async getQuotationByName(quotationName: string): Promise<Quotation | null> {
         // Fetching the full text here as it's needed for download/details
-        const sql = "SELECT id, user_id, name, quotation_text, created_at FROM quotations WHERE id = ?";
-        const params: any[] = [parseInt(id, 10)];
+        const sql = "SELECT id, user_id, name, quotation_text, created_at FROM quotations WHERE name = ?";
+        const params: any[] = [quotationName];
         try {
             const [rows]: any = await query(sql, params);
 
@@ -77,7 +77,32 @@ export class MysqlQuotationRepository implements QuotationRepository {
             }
             return null; // Not found
         } catch (error) {
-            console.error(`Error in getQuotationById for ID ${id}:`, error);
+            console.error(`Error in getQuotationById for ID ${quotationName}:`, error);
+            return null;
+        }
+    }
+
+
+    async getQuotationByProjectName(projectName: string): Promise<Quotation | null> {
+        const sql = "SELECT id, user_id, name, quotation_text, created_at FROM quotations WHERE name = ?";
+        const params: any[] = [projectName];
+        try {
+            const [rows]: any = await query(sql, params);
+
+            if (rows && rows.length > 0) {
+                const row = rows[0];
+                return new Quotation(
+                    row.id.toString(),
+                    row.user_id.toString(),
+                    row.name,
+                    row.quotation_text, // Include the full text
+                    null, // docxPath not stored
+                    row.created_at
+                );
+            }
+            return null; // Not found
+        } catch (error) {
+            console.error(`Error in getQuotationById for ID ${projectName}:`, error);
             return null;
         }
     }

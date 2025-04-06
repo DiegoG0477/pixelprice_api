@@ -132,4 +132,47 @@ export class MysqlUserRepository implements UserRepository {
             return null;
         }
     }
+
+    async updateUser(id: string, data: Partial<Pick<User, 'name' | 'last_name'>>): Promise<User | null> {
+        // Build the SET part of the query dynamically for PATCH behavior
+        const setClauses: string[] = [];
+        const params: any[] = [];
+
+        if (data.name !== undefined) {
+            setClauses.push("name = ?");
+            params.push(data.name);
+        }
+        if (data.last_name !== undefined) {
+            setClauses.push("last_name = ?");
+            params.push(data.last_name);
+        }
+
+        // If no valid fields were provided for update
+        if (setClauses.length === 0) {
+            console.warn(`updateUser called for ID ${id} with no fields to update.`);
+            // Return the existing user data without making a DB call for update
+            // Or return null if PATCH requires at least one field
+             return this.getUserById(id); // Return current state
+        }
+
+        const sql = `UPDATE users SET ${setClauses.join(", ")} WHERE id = ?`;
+        params.push(parseInt(id, 10)); // Add the ID for the WHERE clause
+
+        try {
+            const [result]: any = await query(sql, params);
+
+            // Check if any row was actually updated
+            if (result.affectedRows > 0) {
+                // Fetch the updated user data to return it
+                return await this.getUserById(id);
+            } else {
+                // No rows affected - likely means user with that ID doesn't exist
+                console.warn(`Attempted to update user ID ${id}, but user was not found.`);
+                return null; // User not found
+            }
+        } catch (error) {
+            console.error(`Error in updateUser for ID ${id}:`, error);
+            return null; // Indicate database error during update
+        }
+    }
 }

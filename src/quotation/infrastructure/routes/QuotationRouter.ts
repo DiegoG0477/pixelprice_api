@@ -7,7 +7,8 @@ import { authMiddleware } from '../../../middlewares/authMiddleware'; // Adjust 
 import {
     createQuotationController,
     getQuotationsByUserIdController,
-    generateQuotationDocxController
+    generateQuotationDocxController,
+    getQuotationByProjectNameController
 } from '../quotation.dependencies';
 
 const quotationRouter = express.Router();
@@ -17,7 +18,7 @@ const quotationRouter = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Example: 10MB limit
+    limits: { fileSize: 20 * 1024 * 1024 }, // Example: 10MB limit
     fileFilter: (req, file, cb) => { // Basic image type filter
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -39,12 +40,14 @@ quotationRouter.post(
 );
 
 // GET quotations for a specific user (ensure user matches logged-in user)
-// Parameter ':userId' should match the logged-in user's ID passed by authMiddleware
+// Parameter 'userId' should match the logged-in user's ID passed by authMiddleware
 quotationRouter.get('/user', (req, res) => getQuotationsByUserIdController.run(req, res));
+
+quotationRouter.get('/project/:name', (req, res) => getQuotationByProjectNameController.run(req, res));
 
 // GET to download the DOCX report for a specific quotation
 // Parameter ':id' is the quotation ID
-quotationRouter.get('/:id/download', (req, res) => generateQuotationDocxController.run(req, res));
+quotationRouter.get('/:name/download', (req, res) => generateQuotationDocxController.run(req, res));
 
 
 export { quotationRouter };

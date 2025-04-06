@@ -1,4 +1,3 @@
-// quotation/domain/entities/Quotation.ts
 export class Quotation {
     constructor(
         readonly id: string,          // Keep ID as string

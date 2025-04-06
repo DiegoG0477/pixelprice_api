@@ -27,7 +27,7 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         temperature: 1, // Controls randomness (0=deterministic, 1=max creative)
         topK: 1,
         topP: 1,
-        maxOutputTokens: 8192, // Adjust based on expected report length and model limits
+        maxOutputTokens: 16384, // Adjust based on expected report length and model limits
     };
 
     private safetySettings = [
@@ -135,7 +135,9 @@ export class GeminiQuotationService implements IGeminiQuotationService {
 
     private constructPrompt(input: QuotationInputData): string {
         // Construct a detailed prompt for Gemini
-        let prompt = `Generate a comprehensive software project quotation report based on the following details. Structure the report professionally with clear sections (e.g., Introduction, Scope, Technology Stack Estimate, Feature Breakdown Estimate, Timeline Estimate, Cost Estimate, Assumptions, Next Steps).
+        let prompt = `YOU ARE AND SPECIALIST SOFTWARE DEVELOPER AND PROJECT MANAGER, SO YOU KNOW A LOT OF SOTWARE PRICING AND DEVELOPMENT PROCESS (hours, licences, cloud, use, legal permissions, hire people, and a lot of things...) COSTS
+        
+        Generate a comprehensive software project quotation report based on the following details. Structure the report professionally with clear sections (e.g., Introduction, Scope, Technology Stack Estimate, Feature Breakdown Estimate, Timeline Estimate, Cost Estimate, Assumptions, Simulation, Next Steps).
 
         **Project Name:** ${input.name}
 
@@ -144,11 +146,11 @@ export class GeminiQuotationService implements IGeminiQuotationService {
 
         **Development Team Structure:** ${input.isSelfMade ? "Solo Developer / Self-Made" : "Team-Based Project (Assume standard team roles like PM, Devs, QA if applicable)"}
 
-        **Estimated Initial Capital/Budget (Optional):** ${input.capital ? `$${input.capital.toFixed(2)}` : "Not specified"}
-        ${input.capital ? "- Consider this budget constraint in your estimations if possible." : ""}
+        **Estimated Initial Capital/Budget (Optional):** ${input.capital ? `$ USD ${input.capital.toFixed(2)}` : "Not specified"}
+        ${input.capital ? "- Consider this budget constraint in your estimations if possible. If this budget isn't enough, notify of this to te user and make a suggestion of initial capital and, of a total capital please." : ""}
 
         **Key Requirements for the Report:**
-        1.  **Analyze Complexity:** Based on the description ${input.mockupImage ? "and the provided mockup image" : ""}, assess the overall complexity.
+        1.  **Analyze Complexity:** Based on the description ${input.mockupImage ? "and the provided mockup image" : ""}, assess the overall complexity. 
         2.  **Estimate Design Effort:** ${input.mockupImage ? "Evaluate the provided mockup. Estimate the time/cost needed for a UI/UX designer to refine/implement this design, considering its complexity." : "No mockup provided; assume standard design effort or mention the need for design phase."}
         3.  **Technology Stack:** Suggest a suitable technology stack if not specified, or comment on the feasibility of any mentioned technologies. Estimate effort related to stack setup/configuration.
         4.  **Feature Breakdown:** If possible from the description, break down major features and estimate effort (e.g., in hours, days, or story points) for each.
@@ -157,10 +159,18 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         7.  **Assumptions:** Clearly list any assumptions made during the estimation.
         8.  **Professional Tone:** Use clear, concise, and professional language suitable for a client proposal.
         9.  **Format:** Output the report as well-structured text. Use markdown for formatting if possible (headings, lists, bold text).
+        10. **Prevission** Make time simulations based on active users, hours, demand, or some detail the user requested, if the user didn't, just make a simulation to predict the first year based on development, and use or demand of the product.
 
         **${input.mockupImage ? "Note on Mockup: The following image provides a visual reference for the project's UI/UX." : ""}**
         
-        NOTE: THE REPORT HAVE TO BE WRITTEN IN SPANISH
+        NOTES: 
+        
+        a) THE REPORT HAVE TO BE WRITTEN IN SPANISH
+        b) IF MOCKUP IS PRESENTED BY THE USER, MAKE SOME COMMENTARY BASED ON THE MOKUP, MAINLY ABOUT HOW COMPLEX CAN BE THE APP / SYSTEM BASED ON THE QUALITY OF UI/UX, WHICH MEANS MORE TIME OR MONEY OR EVEN CONTRACT A DESIGNER
+        c) THE MAIN OF ALL OF THIS IS QUOTATION, MAKE AN INTELLIGENT QUOTATION FOR THE USER, BASED ON HIS STACK OR SOMETHING, MAKE AN INVESTIGATION OF PRICES (FOR EXAMPLE LICENCES, CLOUD SERVICES PRICES, ETC) TO RECOMMEND AND COMPARE PRICES, THIS POINT IS BASED ON THE TYPE OF PROJECT AND CLOUD IS SOME AN EXAMPLE OF ALL OF ATTRIBUTES TO CONSIDERER. 
+        d) YOU'RE FREE TO MAKE SUGGESTIONS ABOUT PROCESSES, TECHNOLOGIES OR 
+        c) ESTIMATE AN ADAPT OF ALL THIS FOR A USER WHO LIVES IN MEXICO, SO, AS YOU KNOW, DEVELOP AND MAKE A QUOTATION OF A SOFTWARE PROJECT IS NOT THE SAME IN MEXICO, FRANCE OR US.
+        d) INVESTIGATE ON WEB ABOUT THE PRICES OF ANYTHING YOU DETECT HAS TO NEED BE PAID (Licences, suscriptions, services...)
         `;
         // The image part itself is added separately in the main function if vision model is used.
 

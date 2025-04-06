@@ -27,7 +27,7 @@ export class LoginUserController {
                     token, // Send the generated JWT token
                     user: {      // Enviar datos del usuario
                         id: user?.id,
-                        username: user?.name ?? user?.email, // O el campo correcto para username
+                        username: user?.name, // O el campo correcto para username
                         email: user?.email
                     }
                 });

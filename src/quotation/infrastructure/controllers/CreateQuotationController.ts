@@ -21,8 +21,10 @@ export class CreateQuotationController {
         const file = (req as any).file as UploadedFile | undefined; // Type assertion for req.file
         const data = req.body;
 
+        const userId = (req as any).userId;
+
         // Basic Validation
-        const { userId, name, description, capital, isSelfMade } = data;
+        const { name, description, capital, isSelfMade } = data;
         if (!userId || !name || !description || isSelfMade === undefined) {
              return res.status(400).send({
                 status: 'error',

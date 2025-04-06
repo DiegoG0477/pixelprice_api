@@ -4,11 +4,13 @@
 import { CreateQuotationUseCase } from "../application/use-cases/CreateQuotationUseCase";
 import { GetQuotationsByUserIdUseCase } from "../application/use-cases/GetQuotationsByUserIdUseCase";
 import { GenerateQuotationDocxUseCase } from "../application/use-cases/GenerateQuotationDocxUseCase";
+import { GetQuotationByProjectNameUseCase } from "../application/use-cases/GetQuotationByProjectNameUseCase";
 
 // Controllers
 import { CreateQuotationController } from "./controllers/CreateQuotationController";
 import { GetQuotationsByUserIdController } from "./controllers/GetQuotationsByUserIdController";
 import { GenerateQuotationDocxController } from "./controllers/GenerateQuotationDocxController";
+import { GetQuotationByProjectNameController } from "./controllers/GetQuotationByProjectNameController";
 
 // Repository Implementation
 import { MysqlQuotationRepository } from "./adapters/MysqlQuotationRepository";
@@ -31,7 +33,6 @@ export const docxGeneratorService = new DocxGeneratorService();
 // Instantiate the adapter, passing the *actual* DeviceTokenRepository instance
 export const quotationNotificationService = new FcmNotificationServiceAdapter(mysqlDeviceTokenRepository);
 
-
 // Instantiate Use Cases (Inject dependencies)
 export const createQuotationUseCase = new CreateQuotationUseCase(
     mysqlQuotationRepository,
@@ -43,6 +44,10 @@ export const getQuotationsByUserIdUseCase = new GetQuotationsByUserIdUseCase(
     mysqlQuotationRepository
 );
 
+export const getQuotationByProjectNameUseCase = new GetQuotationByProjectNameUseCase(
+    mysqlQuotationRepository
+)
+
 export const generateQuotationDocxUseCase = new GenerateQuotationDocxUseCase(
     mysqlQuotationRepository,
     docxGeneratorService
@@ -52,3 +57,4 @@ export const generateQuotationDocxUseCase = new GenerateQuotationDocxUseCase(
 export const createQuotationController = new CreateQuotationController(createQuotationUseCase);
 export const getQuotationsByUserIdController = new GetQuotationsByUserIdController(getQuotationsByUserIdUseCase);
 export const generateQuotationDocxController = new GenerateQuotationDocxController(generateQuotationDocxUseCase);
+export const getQuotationByProjectNameController = new GetQuotationByProjectNameController(getQuotationByProjectNameUseCase)

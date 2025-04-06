@@ -8,12 +8,12 @@ export class GenerateQuotationDocxController {
     ) {}
 
     async run(req: Request, res: Response): Promise<Response | void> { // Return void because we manually end the response
-        const quotationId = req.params.id;
+        const quotationIdName = req.params.name;
         // Assuming authMiddleware adds user info to req.user
-        const userId = (req as any).user?.id; // Adjust based on your auth middleware structure
+        const userId = (req as any).userId; // Adjust based on your auth middleware structure
 
-        if (!quotationId) {
-            return res.status(400).send({ status: 'error', message: 'Missing quotation ID parameter.' });
+        if (!quotationIdName) {
+            return res.status(400).send({ status: 'error', message: 'Missing quotation Name parameter.' });
         }
         if (!userId) {
              console.error("User ID not found in request after auth middleware.");
@@ -21,11 +21,11 @@ export class GenerateQuotationDocxController {
         }
 
         try {
-            const docxBuffer = await this.generateQuotationDocxUseCase.run(quotationId, userId.toString());
+            const docxBuffer = await this.generateQuotationDocxUseCase.run(quotationIdName, userId.toString());
 
             if (docxBuffer) {
                 // Set headers for file download
-                res.setHeader('Content-Disposition', `attachment; filename="quotation_${quotationId}.docx"`);
+                res.setHeader('Content-Disposition', `attachment; filename="quotation_${quotationIdName}.docx"`);
                 res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
                 res.setHeader('Content-Length', docxBuffer.length.toString());
 
@@ -40,11 +40,11 @@ export class GenerateQuotationDocxController {
                 // Return 404 or 403 based on cause, simplify to 404 for now
                 return res.status(404).send({
                     status: 'error',
-                    message: `Could not generate DOCX for quotation ID ${quotationId}. It might not exist or you don't have permission.`,
+                    message: `Could not generate DOCX for quotation ID ${quotationIdName}. It might not exist or you don't have permission.`,
                 });
             }
         } catch (error) {
-            console.error(`Error in GenerateQuotationDocxController for ID ${quotationId}:`, error);
+            console.error(`Error in GenerateQuotationDocxController for ID ${quotationIdName}:`, error);
             // Avoid sending headers if already sent or if error happens late
             if (!res.headersSent) {
                  return res.status(500).send({
