@@ -8,14 +8,8 @@ WORKDIR /app
 # Esto aprovecha el cache de capas de Docker. Si estos archivos no cambian,
 # no se reinstalarán las dependencias en cada build.
 COPY package*.json ./
-# Si usas pnpm:
-COPY pnpm-lock.yaml ./
-COPY package.json ./
 
-#RUN npm install
-
-RUN npm install -g pnpm # Instala pnpm globalmente si no está en la imagen base
-RUN pnpm install --frozen-lockfile
+RUN npm install
 
 COPY pixelprice-firebase-admin.json ./
 
@@ -25,4 +19,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD [ "pnpm", "run", "dev" ]
+CMD [ "npm", "run", "dev" ]
