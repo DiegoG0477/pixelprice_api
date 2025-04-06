@@ -17,12 +17,12 @@ COPY package.json ./
 RUN npm install -g pnpm # Instala pnpm globalmente si no está en la imagen base
 RUN pnpm install --frozen-lockfile
 
-COPY diagnow-firebase-admin.json ./
+COPY pixelprice-firebase-admin.json ./
 
-ENV GOOGLE_APPLICATION_CREDENTIALS=/app/diagnow-firebase-admin.json
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/pixel-firebase-admin.json
 
 COPY . .
 
 EXPOSE 8080
 
-CMD [ "npm", "run", "dev" ]
+CMD [ "pnpm", "run", "dev" ]
