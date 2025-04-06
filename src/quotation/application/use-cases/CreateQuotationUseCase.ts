@@ -3,13 +3,15 @@ import { Quotation } from "../../domain/entities/Quotation";
 import { QuotationRepository } from "../../domain/QuotationRepository";
 import { IGeminiQuotationService, QuotationInputData } from "../services/IGeminiQuotationService";
 import { INotificationService } from "../services/INotificationService";
+import { GetUserByIdUseCase } from "../../../user/application/use-cases/GetUserByIdUseCase";
 // import { IDocxGeneratorService } from "../services/IDocxGeneratorService"; // Not needed here for generating DOCX on creation
 
 export class CreateQuotationUseCase {
     constructor(
         private quotationRepository: QuotationRepository,
         private geminiService: IGeminiQuotationService,
-        private notificationService: INotificationService
+        private notificationService: INotificationService,
+        private getUserByIdUseCase: GetUserByIdUseCase
         // private docxService: IDocxGeneratorService // Inject if DOCX was generated/saved here
     ) {}
 
@@ -21,8 +23,17 @@ export class CreateQuotationUseCase {
         isSelfMade: boolean,
         mockupImage: { mimeType: string; data: Buffer } | null // Pass image data
     ): Promise<Quotation | null> {
+
         try {
             console.log(`Starting quotation generation for user ${userId}, project: ${name}`);
+
+            const user = await this.getUserByIdUseCase.run(userId);
+
+            let username = ""
+
+            if(user){
+                username = user.name ? user.name : "";
+            }
 
             // 1. Prepare input for Gemini Service
             const geminiInput: QuotationInputData = {
@@ -35,7 +46,7 @@ export class CreateQuotationUseCase {
 
             // 2. Call Gemini Service to generate the report text
             // This is the potentially long-running step
-            const quotationText = await this.geminiService.generateQuotationReport(geminiInput);
+            const quotationText = await this.geminiService.generateQuotationReport(geminiInput, username);
             console.log(`Gemini generated report text for project: ${name}`);
 
             // (Optional Step: Generate DOCX here if we were saving it immediately)

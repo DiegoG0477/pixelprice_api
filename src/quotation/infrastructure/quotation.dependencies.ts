@@ -5,6 +5,7 @@ import { CreateQuotationUseCase } from "../application/use-cases/CreateQuotation
 import { GetQuotationsByUserIdUseCase } from "../application/use-cases/GetQuotationsByUserIdUseCase";
 import { GenerateQuotationDocxUseCase } from "../application/use-cases/GenerateQuotationDocxUseCase";
 import { GetQuotationByProjectNameUseCase } from "../application/use-cases/GetQuotationByProjectNameUseCase";
+import { GetUserByIdUseCase } from "../../user/application/use-cases/GetUserByIdUseCase";
 
 // Controllers
 import { CreateQuotationController } from "./controllers/CreateQuotationController";
@@ -23,6 +24,7 @@ import { FcmNotificationServiceAdapter } from "./services/firebase/FcmNotificati
 // Shared Dependencies (Import instances or factories)
 // IMPORTANT: Ensure the device token repository is correctly instantiated and imported
 import { mysqlDeviceTokenRepository } from '../../device-token/infrastructure/deviceToken.dependencies'; // Adjust path
+import { mysqlUserRepository } from "../../user/infrastructure/user.dependencies";
 
 // Instantiate Repository
 export const mysqlQuotationRepository = new MysqlQuotationRepository();
@@ -33,11 +35,14 @@ export const docxGeneratorService = new DocxGeneratorService();
 // Instantiate the adapter, passing the *actual* DeviceTokenRepository instance
 export const quotationNotificationService = new FcmNotificationServiceAdapter(mysqlDeviceTokenRepository);
 
+export const getUserByIdUseCase = new GetUserByIdUseCase(mysqlUserRepository);
+
 // Instantiate Use Cases (Inject dependencies)
 export const createQuotationUseCase = new CreateQuotationUseCase(
     mysqlQuotationRepository,
     geminiQuotationService,
-    quotationNotificationService
+    quotationNotificationService,
+    getUserByIdUseCase
 );
 
 export const getQuotationsByUserIdUseCase = new GetQuotationsByUserIdUseCase(

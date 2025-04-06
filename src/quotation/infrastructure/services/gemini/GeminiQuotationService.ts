@@ -37,7 +37,7 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
     ];
 
-    async generateQuotationReport(inputData: QuotationInputData): Promise<string> {
+    async generateQuotationReport(inputData: QuotationInputData, username: string): Promise<string> {
         if (!GEMINI_API_KEY) {
              throw new Error("Gemini API Key is not configured. Cannot generate report.");
         }
@@ -45,12 +45,14 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         const modelName = inputData.mockupImage ? VISION_MODEL_NAME : TEXT_MODEL_NAME;
         const model = genAI.getGenerativeModel({ model: modelName });
 
+        const datenow = Date.now().toLocaleString();
+
         console.log(`Using Gemini model: ${modelName}`);
 
         // --- Correction Starts Here ---
         // Change the type to Part[] and wrap strings in { text: ... }
         const promptParts: Part[] = [
-             { text: this.constructPrompt(inputData) } // Wrap initial prompt string
+             { text: this.constructPrompt(inputData, username, datenow) } // Wrap initial prompt string
         ];
 
         // Add image data if provided (only for vision model)
@@ -133,47 +135,71 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         }
     }
 
-    private constructPrompt(input: QuotationInputData): string {
+    private constructPrompt(input: QuotationInputData, username: string, datenow: string): string {
         // Construct a detailed prompt for Gemini
-        let prompt = `YOU ARE AND SPECIALIST SOFTWARE DEVELOPER AND PROJECT MANAGER, SO YOU KNOW A LOT OF SOTWARE PRICING AND DEVELOPMENT PROCESS (hours, licences, cloud, use, legal permissions, hire people, and a lot of things...) COSTS
-        
-        Generate a comprehensive software project quotation report based on the following details. Structure the report professionally with clear sections (e.g., Introduction, Scope, Technology Stack Estimate, Feature Breakdown Estimate, Timeline Estimate, Cost Estimate, Assumptions, Simulation, Next Steps).
+        let prompt = `
+        **ROL Y CONTEXTO:**
+        ERES UN CONSULTOR EXPERTO EN DESARROLLO DE SOFTWARE Y GESTIÓN DE PROYECTOS, ESPECIALIZADO EN EL MERCADO MEXICANO. Conoces a fondo los costos, procesos, salarios promedio (tanto para talento local como para trabajo remoto/nearshoring), herramientas, licencias, servicios en la nube (AWS, Azure, GCP, proveedores locales si aplica), y las particularidades de estimar, cotizar y ejecutar proyectos de software en México. Entiendes la diferencia entre trabajar para un cliente nacional y uno extranjero (e.g., USA, Europa).
+    
+        **TAREA PRINCIPAL:**
+        Generar un informe DETALLADO que estime el **COSTO DE DESARROLLO INTERNO** para un desarrollador o equipo de desarrollo ubicado en México, basado en los detalles proporcionados. El objetivo es que el desarrollador entienda cuánto le costaría *a él/ella/su equipo* llevar a cabo este proyecto. Secundariamente, proporcionarás una base para una posible cotización a un cliente final.
+    
+        **DATOS DE ENTRADA:**
+        *   **Nombre del Proyecto:** ${input.name}
+        *   **Descripción Detallada del Proyecto (incluye propósito, plataforma, stack, integraciones, seguridad, escalabilidad, infraestructura, funcionalidades clave, roles, pantallas, reportes, características premium, mantenimiento, accesibilidad, compatibilidad, idiomas, detalles del desarrollador):**
+            ${input.description}
+        *   **Estructura del Equipo:** ${input.isSelfMade ? "Desarrollador Solo / Auto-desarrollado" : "Proyecto Basado en Equipo (Asume roles estándar: PM, Desarrolladores ( Frontend, Backend, Móvil según aplique), QA, Diseñador UI/UX si es necesario)"}
+        *   **Capital/Presupuesto Inicial Estimado (Opcional):** ${input.capital ? `$${input.capital.toFixed(2)} USD (o su equivalente aproximado en MXN)` : "No especificado"}
+            ${input.capital ? "- Considera esta restricción presupuestaria. Si es insuficiente para el alcance descrito, indícalo CLARAMENTE y sugiere un capital inicial y total más realista para el desarrollo." : ""}
+        *   **Mockup/Diseño Proporcionado:** ${input.mockupImage ? "Sí (analizar imagen adjunta)." : "No."}
+    
+        **ESTRUCTURA DEL INFORME REQUERIDO (EN ESPAÑOL):**
+    
+        1.  **Resumen Ejecutivo:** Breve descripción del proyecto, complejidad estimada, rango de costo interno de desarrollo y cronograma general.
+        2.  **Análisis del Proyecto y Alcance:** Interpretación de los requisitos, funcionalidades clave identificadas y delimitación del alcance estimado.
+        3.  **Análisis de Complejidad y Viabilidad:** Evaluación general de la complejidad técnica y funcional. Comentarios sobre la viabilidad con el presupuesto/equipo indicado (si aplica).
+        4.  **Análisis del Mockup (Si aplica):** ${input.mockupImage ? "Evalúa la calidad y complejidad del diseño UI/UX del mockup. Estima el esfuerzo adicional (tiempo/costo) si se requiere un diseñador profesional para refinarlo o implementarlo. Comenta cómo el diseño impacta la complejidad del desarrollo." : "No se proporcionó mockup; se asumirá un esfuerzo de diseño estándar o se indicará la necesidad de una fase de diseño explícita."}
+        5.  **Pila Tecnológica Propuesta/Análisis:** Sugiere un stack tecnológico adecuado (frontend, backend, base de datos, móvil si aplica) si no se especificó, o comenta sobre el stack proporcionado. Considera costos asociados (licencias, etc.).
+        6.  **Estimación Detallada del Esfuerzo de Desarrollo (INTERNO):**
+            *   **Desglose Funcional:** Detalla las funcionalidades o módulos principales identificados.
+            *   **Estimación de Esfuerzo por Funcionalidad:** Para cada funcionalidad, estima el esfuerzo en **horas-persona** o **story points**. Si es posible, intenta aplicar principios similares a los **Puntos de Función COSMIC** para cuantificar el tamaño funcional, explicando tu metodología de forma simplificada. Sé granular.
+            *   **Esfuerzo por Roles:** Estima horas totales para: Diseño UI/UX (si aplica), Desarrollo Frontend, Desarrollo Backend, Desarrollo Móvil (si aplica), QA/Pruebas, Gestión de Proyecto, Despliegue/DevOps.
+            *   **Esfuerzo Total Estimado (Horas-Persona):** Suma total de horas.
+        7.  **Costo Estimado de Desarrollo (INTERNO - para el Desarrollador/Equipo en México):**
+            *   **Costos de Personal:** Basado en las horas estimadas por rol y **tarifas horarias PROMEDIO REALISTAS para México** (especifica las tarifas asumidas por rol, ej. Dev Jr, Mid, Sr, PM, QA, Diseñador en MXN/hora o USD/hora si es para cliente extranjero). Diferencia si es un solo desarrollador (costo de oportunidad) o un equipo.
+            *   **Costos de Herramientas y Licencias:** **INVESTIGA EN LA WEB PRECIOS ACTUALIZADOS** para licencias de software, IDEs (si no son gratuitos), herramientas de diseño (ej. Figma), servicios específicos (ej. API de Mapas, Email), etc., necesarios DURANTE el desarrollo.
+            *   **Costos de Infraestructura (Desarrollo/Pruebas):** **INVESTIGA COSTOS** de servicios cloud (ej. Instancias EC2/VMs, bases de datos gestionadas, repositorios) necesarios para el entorno de desarrollo y staging.
+            *   **Otros Costos Directos:** (Pequeño buffer para imprevistos, ~10-15%).
+            *   **Rango de Costo Total Interno de Desarrollo (MXN y/o USD):** Presenta un rango (optimista, pesimista) del costo total para el desarrollador/equipo.
+        8.  **Base para Cotización a Cliente Final (Opcional/Secundario):**
+            *   **Cálculo Base:** Explica cómo derivar un precio para el cliente (Costo Interno + Margen de Ganancia + Impuestos si aplica). Sugiere un margen razonable (ej. 30-50%).
+            *   **Diferenciación Cliente Nacional vs. Extranjero:** Comenta cómo ajustar la cotización si el cliente es de USA/Europa vs. México (tarifas potencialmente más altas para clientes extranjeros).
+            *   **Rango de Cotización Sugerido (MXN y/o USD):** Proporciona un rango de precio estimado para el cliente final.
+        9.  **Cronograma Estimado:** Proporciona un cronograma realista por fases (Diseño, Desarrollo por sprints/módulos, Pruebas, Despliegue) en semanas o meses.
+        10. **Simulación de Costos Operativos (Primer Año Post-Lanzamiento):**
+            *   **Costos de Infraestructura (Producción):** **INVESTIGA COSTOS MENSUALES/ANUALES** de hosting/cloud (servidores, bases de datos, CDN, almacenamiento), dominios, certificados SSL, etc., basados en una estimación de carga inicial (pocos usuarios).
+            *   **Costos de Mantenimiento:** Estimación de horas/costo mensual para correcciones, pequeñas mejoras, actualizaciones de dependencias (basado en un % del esfuerzo inicial o tarifa fija).
+            *   **Costos Recurrentes:** Licencias de software/SaaS que continúan en producción (APIs de terceros, etc.).
+            *   **Costo Operativo Anual Estimado (MXN y/o USD):** Rango de costo total para mantener la aplicación funcionando el primer año.
+        11. **Simulación de Rentabilidad Potencial (Primer Año - Especulativo):**
+            *   **Modelo de Ingresos Asumido:** Si el proyecto tiene un modelo de negocio implícito (venta, suscripción, publicidad), haz una suposición BÁSICA y sencilla. Si no, indica que no es posible estimar ingresos.
+            *   **Estimación de Ingresos vs. Costos Operativos:** Compara los costos operativos anuales con una proyección MUY CONSERVADORA de ingresos (si se asumió un modelo).
+            *   **Análisis:** Indica si, bajo esos supuestos conservadores, el proyecto podría acercarse a la rentabilidad o requeriría una tracción significativa. **NO INVENTES CIFRAS DE VENTAS DETALLADAS**, solo una simulación básica conceptual.
+        12. **Supuestos Clave Realizados:** Lista todas las asunciones hechas (tarifas horarias, costos de licencias/cloud específicos, alcance detallado si no estaba claro, etc.).
+        13. **Recomendaciones y Próximos Pasos:** Sugerencias sobre tecnologías, procesos, o pasos siguientes para el desarrollador (ej. validar estimaciones, crear prototipo, etc.).
+    
+        **INSTRUCCIONES ADICIONALES IMPORTANTES:**
+        a)  **IDIOMA:** El informe completo DEBE estar en **Español (México)**.
+        b)  **INVESTIGACIÓN WEB:** Es **CRUCIAL** que utilices tus capacidades de búsqueda web para obtener precios **actualizados y específicos para México (o USD si aplica a servicios globales)** de licencias, servicios cloud (sé específico si puedes inferir el tipo de servicio, ej. AWS t3.micro, Azure App Service S1, etc.), APIs, etc. Indica las fuentes o fechas de consulta si es posible. ¡Las estimaciones genéricas sin precios investigados son menos útiles!
+        c)  **ENFOQUE EN EL DESARROLLADOR:** Recuerda que el objetivo principal es calcular el **costo interno** para el desarrollador/equipo en México. La cotización al cliente es secundaria.
+        d)  **TONO PROFESIONAL Y REALISTA:** Usa un lenguaje claro, profesional pero directo. Sé realista con las estimaciones de tiempo y costo. Es mejor ser conservador.
+        e)  **FORMATO:** Utiliza Markdown para una buena estructura (encabezados, listas, negritas).
+        f)  **SUGERENCIAS:** Siéntete libre de proponer mejoras o alternativas (tecnológicas, de proceso) si lo consideras pertinente.
 
-        **Project Name:** ${input.name}
+        NOTAS: 
 
-        **Project Description:**
-        ${input.description}
-
-        **Development Team Structure:** ${input.isSelfMade ? "Solo Developer / Self-Made" : "Team-Based Project (Assume standard team roles like PM, Devs, QA if applicable)"}
-
-        **Estimated Initial Capital/Budget (Optional):** ${input.capital ? `$ USD ${input.capital.toFixed(2)}` : "Not specified"}
-        ${input.capital ? "- Consider this budget constraint in your estimations if possible. If this budget isn't enough, notify of this to te user and make a suggestion of initial capital and, of a total capital please." : ""}
-
-        **Key Requirements for the Report:**
-        1.  **Analyze Complexity:** Based on the description ${input.mockupImage ? "and the provided mockup image" : ""}, assess the overall complexity. 
-        2.  **Estimate Design Effort:** ${input.mockupImage ? "Evaluate the provided mockup. Estimate the time/cost needed for a UI/UX designer to refine/implement this design, considering its complexity." : "No mockup provided; assume standard design effort or mention the need for design phase."}
-        3.  **Technology Stack:** Suggest a suitable technology stack if not specified, or comment on the feasibility of any mentioned technologies. Estimate effort related to stack setup/configuration.
-        4.  **Feature Breakdown:** If possible from the description, break down major features and estimate effort (e.g., in hours, days, or story points) for each.
-        5.  **Timeline:** Provide a rough timeline estimate (e.g., weeks or months) for development phases (Design, Development, Testing, Deployment).
-        6.  **Cost Estimation:** Provide a cost range based on estimated effort and typical freelance or agency rates (clearly state your assumed rate or basis). Factor in team structure (solo vs. team).
-        7.  **Assumptions:** Clearly list any assumptions made during the estimation.
-        8.  **Professional Tone:** Use clear, concise, and professional language suitable for a client proposal.
-        9.  **Format:** Output the report as well-structured text. Use markdown for formatting if possible (headings, lists, bold text).
-        10. **Prevission** Make time simulations based on active users, hours, demand, or some detail the user requested, if the user didn't, just make a simulation to predict the first year based on development, and use or demand of the product.
-
-        **${input.mockupImage ? "Note on Mockup: The following image provides a visual reference for the project's UI/UX." : ""}**
-        
-        NOTES: 
-        
-        a) THE REPORT HAVE TO BE WRITTEN IN SPANISH
-        b) IF MOCKUP IS PRESENTED BY THE USER, MAKE SOME COMMENTARY BASED ON THE MOKUP, MAINLY ABOUT HOW COMPLEX CAN BE THE APP / SYSTEM BASED ON THE QUALITY OF UI/UX, WHICH MEANS MORE TIME OR MONEY OR EVEN CONTRACT A DESIGNER
-        c) THE MAIN OF ALL OF THIS IS QUOTATION, MAKE AN INTELLIGENT QUOTATION FOR THE USER, BASED ON HIS STACK OR SOMETHING, MAKE AN INVESTIGATION OF PRICES (FOR EXAMPLE LICENCES, CLOUD SERVICES PRICES, ETC) TO RECOMMEND AND COMPARE PRICES, THIS POINT IS BASED ON THE TYPE OF PROJECT AND CLOUD IS SOME AN EXAMPLE OF ALL OF ATTRIBUTES TO CONSIDERER. 
-        d) YOU'RE FREE TO MAKE SUGGESTIONS ABOUT PROCESSES, TECHNOLOGIES OR 
-        c) ESTIMATE AN ADAPT OF ALL THIS FOR A USER WHO LIVES IN MEXICO, SO, AS YOU KNOW, DEVELOP AND MAKE A QUOTATION OF A SOFTWARE PROJECT IS NOT THE SAME IN MEXICO, FRANCE OR US.
-        d) INVESTIGATE ON WEB ABOUT THE PRICES OF ANYTHING YOU DETECT HAS TO NEED BE PAID (Licences, suscriptions, services...)
+        Si en reporte por alguna razón deseas ingresar el nombre del desarrollador, este es: ${username}, si quieres implementar la fecha de hoy en el reporte, esa es: ${datenow}
         `;
-        // The image part itself is added separately in the main function if vision model is used.
-
         return prompt;
     }
 }

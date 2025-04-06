@@ -138,7 +138,7 @@ export class DocxGeneratorService implements IDocxGeneratorService {
                 }),
                 new Paragraph({ text: "" }),
                 new Paragraph({
-                    text: `Generado el: ${new Date().toLocaleDateString()}`,
+                    text: `Descargado el: ${new Date().toLocaleDateString()}`,
                     alignment: AlignmentType.CENTER,
                 }),
                 new Paragraph({ text: "" })
@@ -348,7 +348,8 @@ export class DocxGeneratorService implements IDocxGeneratorService {
                 ...rowsTokens.map(row => row[index])
             ];
             // Usar un mínimo de 2000 twips (aproximadamente 1.5 pulgadas) o más según el contenido
-            return Math.max(2000, Math.min(5000, columnContent.length * 1000));
+            //return Math.max(2000, Math.min(5000, columnContent.length * 1000));
+            return Math.max(1500, Math.min(3000, columnContent.length * 800));
         });
     
         const createTableCell = (cellTokens: any[] | undefined, isHeader: boolean = false, columnIndex: number): TableCell => {

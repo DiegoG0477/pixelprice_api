@@ -16,5 +16,5 @@ export interface IGeminiQuotationService {
      * @returns A Promise resolving to the generated quotation text (string).
      * @throws Error if the API call fails or returns an error.
      */
-    generateQuotationReport(inputData: QuotationInputData): Promise<string>;
+    generateQuotationReport(inputData: QuotationInputData, username: string): Promise<string>;
 }
