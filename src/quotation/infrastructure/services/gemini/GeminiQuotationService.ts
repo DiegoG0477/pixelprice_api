@@ -14,8 +14,8 @@ if (!GEMINI_API_KEY) {
 }
 
 // Use stable model names from the 1.5 series
-const TEXT_MODEL_NAME = "gemini-1.5-flash-latest";
-const VISION_MODEL_NAME = "gemini-1.5-flash-latest";
+const TEXT_MODEL_NAME = "gemini-2.0-flash-latest";
+const VISION_MODEL_NAME = "gemini-2.0-flash-latest";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "YOUR_API_KEY_FALLBACK"); // Fallback only for type safety if check above is removed
 
