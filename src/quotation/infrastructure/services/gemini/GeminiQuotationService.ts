@@ -3,7 +3,6 @@ import {
     HarmCategory,
     HarmBlockThreshold,
     GenerationConfig,
-    //Content, // Keep Content if used elsewhere, otherwise optional
     Part // <--- Import the Part type
 } from "@google/generative-ai";
 import { IGeminiQuotationService, QuotationInputData } from "../../../application/services/IGeminiQuotationService";
@@ -24,7 +23,7 @@ export class GeminiQuotationService implements IGeminiQuotationService {
 
     // Configuration for the generation request
     private generationConfig: GenerationConfig = {
-        temperature: 1, // Controls randomness (0=deterministic, 1=max creative)
+        temperature: 0.8, // Controls randomness (0=deterministic, 1=max creative)
         topK: 1,
         topP: 1,
         maxOutputTokens: 16384, // Adjust based on expected report length and model limits
@@ -45,14 +44,22 @@ export class GeminiQuotationService implements IGeminiQuotationService {
         const modelName = inputData.mockupImage ? VISION_MODEL_NAME : TEXT_MODEL_NAME;
         const model = genAI.getGenerativeModel({ model: modelName });
 
-        const datenow = Date.now().toLocaleString();
+        const now = new Date(); // Obtiene la fecha y hora actuales
+        const day = now.getDate(); // Obtiene el día del mes (1-31)
+        const month = now.getMonth(); // Obtiene el mes (0-11, ¡Ojo: Enero es 0!)
+        const year = now.getFullYear(); // Obtiene el año (4 dígitos)
+    
+        // Formatear la fecha en español (DD de Mes de YYYY)
+        const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+        const formattedDate = `${day} de ${monthNames[month]} de ${year}`;
+        // --- FIN: Modificación para la fecha ---
 
         console.log(`Using Gemini model: ${modelName}`);
 
         // --- Correction Starts Here ---
         // Change the type to Part[] and wrap strings in { text: ... }
         const promptParts: Part[] = [
-             { text: this.constructPrompt(inputData, username, datenow) } // Wrap initial prompt string
+             { text: this.constructPrompt(inputData, username, formattedDate) } // Wrap initial prompt string
         ];
 
         // Add image data if provided (only for vision model)
@@ -136,69 +143,70 @@ export class GeminiQuotationService implements IGeminiQuotationService {
     }
 
     private constructPrompt(input: QuotationInputData, username: string, datenow: string): string {
-        // Construct a detailed prompt for Gemini
         let prompt = `
         **ROL Y CONTEXTO:**
-        ERES UN CONSULTOR EXPERTO EN DESARROLLO DE SOFTWARE Y GESTIÓN DE PROYECTOS, ESPECIALIZADO EN EL MERCADO MEXICANO. Conoces a fondo los costos, procesos, salarios promedio (tanto para talento local como para trabajo remoto/nearshoring), herramientas, licencias, servicios en la nube (AWS, Azure, GCP, proveedores locales si aplica), y las particularidades de estimar, cotizar y ejecutar proyectos de software en México. Entiendes la diferencia entre trabajar para un cliente nacional y uno extranjero (e.g., USA, Europa).
+        ERES UN CONSULTOR EXPERTO EN DESARROLLO DE SOFTWARE, ESPECIALIZADO EN EL **MERCADO FREELANCE MEXICANO**. Actúas como un mentor o colega experimentado ayudando a un **desarrollador independiente (freelancer) o un equipo muy pequeño (1-3 personas máximo)** en México a estimar los costos *internos* para llevar a cabo un proyecto. Conoces los costos REALISTAS, procesos ágiles adaptados a freelancers, salarios promedio o **tarifas por hora FREELANCE competitivas** (locales y para clientes extranjeros - nearshoring), herramientas (priorizando gratuitas o de bajo costo), servicios en la nube (opciones económicas), y las particularidades de estimar y cotizar como freelancer en México. Entiendes el concepto de **costo de oportunidad** para un desarrollador solo.
     
         **TAREA PRINCIPAL:**
-        Generar un informe DETALLADO que estime el **COSTO DE DESARROLLO INTERNO** para un desarrollador o equipo de desarrollo ubicado en México, basado en los detalles proporcionados. El objetivo es que el desarrollador entienda cuánto le costaría *a él/ella/su equipo* llevar a cabo este proyecto. Secundariamente, proporcionarás una base para una posible cotización a un cliente final.
+        Generar un informe DETALLADO que estime el **COSTO DE DESARROLLO INTERNO REALISTA para un FREELANCER o equipo pequeño** ubicado en México. El objetivo es que el desarrollador (${username}) entienda cuánto le costaría *personalmente* (en tiempo, esfuerzo y gastos directos mínimos) llevar a cabo este proyecto. **NO ESTÁS CALCULANDO COSTOS PARA UNA AGENCIA CON GRANDES GASTOS GENERALES (OVERHEAD).** Secundariamente, proporcionarás una base para una posible cotización a un cliente final, partiendo de este costo interno freelance.
     
         **DATOS DE ENTRADA:**
-        *   **Nombre del Proyecto:** ${input.name}
-        *   **Descripción Detallada del Proyecto (incluye propósito, plataforma, stack, integraciones, seguridad, escalabilidad, infraestructura, funcionalidades clave, roles, pantallas, reportes, características premium, mantenimiento, accesibilidad, compatibilidad, idiomas, detalles del desarrollador):**
-            ${input.description}
-        *   **Estructura del Equipo:** ${input.isSelfMade ? "Desarrollador Solo / Auto-desarrollado" : "Proyecto Basado en Equipo (Asume roles estándar: PM, Desarrolladores ( Frontend, Backend, Móvil según aplique), QA, Diseñador UI/UX si es necesario)"}
-        *   **Capital/Presupuesto Inicial Estimado (Opcional):** ${input.capital ? `$${input.capital.toFixed(2)} USD (o su equivalente aproximado en MXN)` : "No especificado"}
-            ${input.capital ? "- Considera esta restricción presupuestaria. Si es insuficiente para el alcance descrito, indícalo CLARAMENTE y sugiere un capital inicial y total más realista para el desarrollo." : ""}
-        *   **Mockup/Diseño Proporcionado:** ${input.mockupImage ? "Sí (analizar imagen adjunta)." : "No."}
+        * **Nombre del Proyecto:** ${input.name}
+        * **Descripción Detallada del Proyecto:** ${input.description}
+        * **Estructura del Equipo:** ${input.isSelfMade ? "**Desarrollador Solo (Freelancer)**" : "**Equipo Pequeño (Asume roles mínimos y/o compartidos, prioriza eficiencia)**"} <-- **IMPORTANTE: Adapta las estimaciones drásticamente según esta estructura.**
+        * **Capital/Presupuesto Inicial Estimado (Opcional):** ${input.capital ? `$${input.capital.toFixed(2)} USD (o su equivalente aproximado en MXN)` : "No especificado"}
+            ${input.capital ? "- Considera esta restricción presupuestaria. Si es INSUFICIENTE incluso para un enfoque freelance austero, indícalo CLARAMENTE y sugiere un mínimo viable." : ""}
+        * **Mockup/Diseño Proporcionado:** ${input.mockupImage ? "Sí (analizar imagen adjunta)." : "No."}
     
         **ESTRUCTURA DEL INFORME REQUERIDO (EN ESPAÑOL):**
     
-        1.  **Resumen Ejecutivo:** Breve descripción del proyecto, complejidad estimada, rango de costo interno de desarrollo y cronograma general.
-        2.  **Análisis del Proyecto y Alcance:** Interpretación de los requisitos, funcionalidades clave identificadas y delimitación del alcance estimado.
-        3.  **Análisis de Complejidad y Viabilidad:** Evaluación general de la complejidad técnica y funcional. Comentarios sobre la viabilidad con el presupuesto/equipo indicado (si aplica).
-        4.  **Análisis del Mockup (Si aplica):** ${input.mockupImage ? "Evalúa la calidad y complejidad del diseño UI/UX del mockup. Estima el esfuerzo adicional (tiempo/costo) si se requiere un diseñador profesional para refinarlo o implementarlo. Comenta cómo el diseño impacta la complejidad del desarrollo." : "No se proporcionó mockup; se asumirá un esfuerzo de diseño estándar o se indicará la necesidad de una fase de diseño explícita."}
-        5.  **Pila Tecnológica Propuesta/Análisis:** Sugiere un stack tecnológico adecuado (frontend, backend, base de datos, móvil si aplica) si no se especificó, o comenta sobre el stack proporcionado. Considera costos asociados (licencias, etc.).
-        6.  **Estimación Detallada del Esfuerzo de Desarrollo (INTERNO):**
-            *   **Desglose Funcional:** Detalla las funcionalidades o módulos principales identificados.
-            *   **Estimación de Esfuerzo por Funcionalidad:** Para cada funcionalidad, estima el esfuerzo en **horas-persona** o **story points**. Si es posible, intenta aplicar principios similares a los **Puntos de Función COSMIC** para cuantificar el tamaño funcional, explicando tu metodología de forma simplificada. Sé granular.
-            *   **Esfuerzo por Roles:** Estima horas totales para: Diseño UI/UX (si aplica), Desarrollo Frontend, Desarrollo Backend, Desarrollo Móvil (si aplica), QA/Pruebas, Gestión de Proyecto, Despliegue/DevOps.
-            *   **Esfuerzo Total Estimado (Horas-Persona):** Suma total de horas.
-        7.  **Costo Estimado de Desarrollo (INTERNO - para el Desarrollador/Equipo en México):**
-            *   **Costos de Personal:** Basado en las horas estimadas por rol y **tarifas horarias PROMEDIO REALISTAS para México** (especifica las tarifas asumidas por rol, ej. Dev Jr, Mid, Sr, PM, QA, Diseñador en MXN/hora o USD/hora si es para cliente extranjero). Diferencia si es un solo desarrollador (costo de oportunidad) o un equipo.
-            *   **Costos de Herramientas y Licencias:** **INVESTIGA EN LA WEB PRECIOS ACTUALIZADOS** para licencias de software, IDEs (si no son gratuitos), herramientas de diseño (ej. Figma), servicios específicos (ej. API de Mapas, Email), etc., necesarios DURANTE el desarrollo.
-            *   **Costos de Infraestructura (Desarrollo/Pruebas):** **INVESTIGA COSTOS** de servicios cloud (ej. Instancias EC2/VMs, bases de datos gestionadas, repositorios) necesarios para el entorno de desarrollo y staging.
-            *   **Otros Costos Directos:** (Pequeño buffer para imprevistos, ~10-15%).
-            *   **Rango de Costo Total Interno de Desarrollo (MXN y/o USD):** Presenta un rango (optimista, pesimista) del costo total para el desarrollador/equipo.
-        8.  **Base para Cotización a Cliente Final (Opcional/Secundario):**
-            *   **Cálculo Base:** Explica cómo derivar un precio para el cliente (Costo Interno + Margen de Ganancia + Impuestos si aplica). Sugiere un margen razonable (ej. 30-50%).
-            *   **Diferenciación Cliente Nacional vs. Extranjero:** Comenta cómo ajustar la cotización si el cliente es de USA/Europa vs. México (tarifas potencialmente más altas para clientes extranjeros).
-            *   **Rango de Cotización Sugerido (MXN y/o USD):** Proporciona un rango de precio estimado para el cliente final.
-        9.  **Cronograma Estimado:** Proporciona un cronograma realista por fases (Diseño, Desarrollo por sprints/módulos, Pruebas, Despliegue) en semanas o meses.
-        10. **Simulación de Costos Operativos (Primer Año Post-Lanzamiento):**
-            *   **Costos de Infraestructura (Producción):** **INVESTIGA COSTOS MENSUALES/ANUALES** de hosting/cloud (servidores, bases de datos, CDN, almacenamiento), dominios, certificados SSL, etc., basados en una estimación de carga inicial (pocos usuarios).
-            *   **Costos de Mantenimiento:** Estimación de horas/costo mensual para correcciones, pequeñas mejoras, actualizaciones de dependencias (basado en un % del esfuerzo inicial o tarifa fija).
-            *   **Costos Recurrentes:** Licencias de software/SaaS que continúan en producción (APIs de terceros, etc.).
-            *   **Costo Operativo Anual Estimado (MXN y/o USD):** Rango de costo total para mantener la aplicación funcionando el primer año.
-        11. **Simulación de Rentabilidad Potencial (Primer Año - Especulativo):**
-            *   **Modelo de Ingresos Asumido:** Si el proyecto tiene un modelo de negocio implícito (venta, suscripción, publicidad), haz una suposición BÁSICA y sencilla. Si no, indica que no es posible estimar ingresos.
-            *   **Estimación de Ingresos vs. Costos Operativos:** Compara los costos operativos anuales con una proyección MUY CONSERVADORA de ingresos (si se asumió un modelo).
-            *   **Análisis:** Indica si, bajo esos supuestos conservadores, el proyecto podría acercarse a la rentabilidad o requeriría una tracción significativa. **NO INVENTES CIFRAS DE VENTAS DETALLADAS**, solo una simulación básica conceptual.
-        12. **Supuestos Clave Realizados:** Lista todas las asunciones hechas (tarifas horarias, costos de licencias/cloud específicos, alcance detallado si no estaba claro, etc.).
-        13. **Recomendaciones y Próximos Pasos:** Sugerencias sobre tecnologías, procesos, o pasos siguientes para el desarrollador (ej. validar estimaciones, crear prototipo, etc.).
+        1.  **Resumen Ejecutivo:** Breve descripción, complejidad estimada (considerando enfoque freelance), rango de **costo interno freelance** y cronograma general ajustado.
+        2.  **Análisis del Proyecto y Alcance (Perspectiva Freelance):** Interpretación de requisitos, funcionalidades clave y delimitación del alcance **mínimo viable** si es necesario para ajustarse a un presupuesto/tiempo freelance.
+        3.  **Análisis de Complejidad y Viabilidad (Freelance):** Evaluación de complejidad técnica y funcional desde la óptica de un desarrollador solo o equipo pequeño. Comentarios sobre viabilidad con el presupuesto/estructura indicada.
+        4.  **Análisis del Mockup (Si aplica):** Evalúa complejidad del diseño. Si no hay mockup o es básico, sugiere si un diseño simple funcional es suficiente o si se necesita un UI Kit/plantilla para acelerar (enfoque freelance). Estima esfuerzo de implementación frontend.
+        5.  **Pila Tecnológica Propuesta/Análisis (Enfoque Freelance):** Sugiere un stack eficiente y de bajo costo (considera tecnologías con buena comunidad, componentes reutilizables, BaaS si aplica). Comenta sobre el stack proporcionado y sus costos asociados (licencias mínimas o gratuitas).
+        6.  **Estimación Detallada del Esfuerzo de Desarrollo (INTERNO - FREELANCE):**
+            * **Desglose Funcional:** Detalla funcionalidades o módulos principales.
+            * **Estimación de Esfuerzo por Funcionalidad:** Estima esfuerzo en **horas-persona REALISTAS para un freelancer/equipo pequeño**. Sé granular pero pragmático. Evita sobreestimar la coordinación o burocracia inexistente en este contexto.
+            * **Esfuerzo por Roles (Si aplica equipo pequeño):** Estima horas totales para roles CLAVE (ej. Desarrollo Fullstack, quizá algo de QA básico). **Si es Desarrollador Solo, enfócate en el esfuerzo TOTAL de esa persona.** Minimiza o integra roles (PM, DevOps básico) en el rol principal.
+            * **Esfuerzo Total Estimado (Horas-Persona):** Suma total de horas. **Sé conservador pero realista para el contexto freelance.**
+        7.  **Costo Estimado de Desarrollo (INTERNO - FREELANCE en México):**
+            * **Costos de Personal (Tiempo/Oportunidad):**
+                * **Si es Desarrollador Solo:** Calcula el costo basado en las horas estimadas multiplicadas por una **TARIFA HORARIA FREELANCE REALISTA y COMPETITIVA para México** (MXN/hora) según el perfil (Jr, Mid, Sr). **NO USES TARIFAS DE AGENCIA.** Indica claramente la tarifa asumida. Este es el principal costo: el valor del tiempo del freelancer.
+                * **Si es Equipo Pequeño:** Calcula el costo basado en horas por rol y tarifas **FREELANCE** por rol. Especifica tarifas asumidas (MXN/hora).
+            * **Costos de Herramientas y Licencias:** **INVESTIGA PRECIOS ACTUALIZADOS** pero enfócate en **alternativas GRATUITAS o de MUY BAJO COSTO** viables para freelancers (IDEs gratuitos, tiers gratuitos de Figma/similares, etc.). Solo incluye costos si son estrictamente necesarios.
+            * **Costos de Infraestructura (Desarrollo/Pruebas):** **INVESTIGA COSTOS** de servicios cloud **en sus niveles GRATUITOS o más ECONÓMICOS** (ej. AWS Free Tier, Vercel Hobby, Heroku Eco/Mini, opciones de VPS baratos en México) suficientes para desarrollo y pruebas iniciales.
+            * **Otros Costos Directos MÍNIMOS:** Buffer **pequeño** para imprevistos (ej. **5-10% MÁXIMO** sobre los costos directos calculados).
+            * **Rango de Costo Total Interno de Desarrollo (MXN):** Presenta un rango (optimista, realista) del costo total **PARA EL FREELANCER**.
+        8.  **Base para Cotización a Cliente Final (Secundario):**
+            * **Cálculo Base:** Explica CÓMO el freelancer puede calcular un precio: (Costo Interno Calculado Arriba + Margen de Ganancia Freelance + Impuestos si aplica). Sugiere un margen freelance razonable (ej. 30-60%, dependiendo complejidad y cliente).
+            * **Diferenciación Cliente:** Comenta cómo ajustar la tarifa/margen si el cliente es extranjero (USA/Europa) vs. nacional.
+            * **Rango de Cotización Sugerido (MXN y/o USD):** Rango de precio estimado PARA EL CLIENTE FINAL.
+        9.  **Cronograma Estimado (Ajustado a Freelance):** Cronograma realista por fases, considerando que una sola persona o equipo pequeño puede tener menos paralelismo. Semanas o meses.
+        10. **Simulación de Costos Operativos (Primer Año Post-Lanzamiento - ENFOQUE ECONÓMICO):**
+            * **Costos de Infraestructura (Producción):** **INVESTIGA COSTOS MENSUALES/ANUALES** de opciones de hosting/cloud **ECONÓMICAS** (Shared Hosting, VPS básico, Serverless con bajo tráfico inicial, tiers de pago bajos de PaaS/BaaS). Incluye dominio, SSL básico. Asume carga inicial BAJA.
+            * **Costos de Mantenimiento:** Estimación de horas/costo mensual para mantenimiento **BÁSICO** (correcciones críticas, actualizaciones seguridad). Puede ser una tarifa mensual pequeña o un banco de horas mínimo.
+            * **Costos Recurrentes:** Licencias/APIs estrictamente necesarias en producción (considera alternativas gratuitas).
+            * **Costo Operativo Anual Estimado (MXN):** Rango de costo ANUAL **MÍNIMO** para mantener la app funcionando.
+        11. **Simulación de Rentabilidad Potencial (Primer Año - MUY CONSERVADORA):**
+            * **Modelo de Ingresos Asumido:** Si aplica, haz una suposición SIMPLE y CONSERVADORA.
+            * **Estimación de Ingresos vs. Costos Operativos:** Compara costos operativos ANUALES MÍNIMOS con proyección MUY CONSERVADORA de ingresos.
+            * **Análisis:** Indica si podría cubrir costos operativos básicos o requeriría tracción. **NO INVENTES CIFRAS, enfócate en el punto de equilibrio operativo.**
+        12. **Supuestos Clave Realizados:** Lista suposiciones (tarifa horaria freelance asumida, costos específicos de herramientas/cloud económicos, alcance simplificado si fue necesario, etc.).
+        13. **Recomendaciones y Próximos Pasos (Para el Freelancer):** Sugerencias prácticas (validar estimación, buscar componentes reutilizables, empezar con MVP, etc.).
     
         **INSTRUCCIONES ADICIONALES IMPORTANTES:**
-        a)  **IDIOMA:** El informe completo DEBE estar en **Español (México)**.
-        b)  **INVESTIGACIÓN WEB:** Es **CRUCIAL** que utilices tus capacidades de búsqueda web para obtener precios **actualizados y específicos para México (o USD si aplica a servicios globales)** de licencias, servicios cloud (sé específico si puedes inferir el tipo de servicio, ej. AWS t3.micro, Azure App Service S1, etc.), APIs, etc. Indica las fuentes o fechas de consulta si es posible. ¡Las estimaciones genéricas sin precios investigados son menos útiles!
-        c)  **ENFOQUE EN EL DESARROLLADOR:** Recuerda que el objetivo principal es calcular el **costo interno** para el desarrollador/equipo en México. La cotización al cliente es secundaria.
-        d)  **TONO PROFESIONAL Y REALISTA:** Usa un lenguaje claro, profesional pero directo. Sé realista con las estimaciones de tiempo y costo. Es mejor ser conservador.
-        e)  **FORMATO:** Utiliza Markdown para una buena estructura (encabezados, listas, negritas).
-        f)  **SUGERENCIAS:** Siéntete libre de proponer mejoras o alternativas (tecnológicas, de proceso) si lo consideras pertinente.
-
-        NOTAS: 
-
-        Si en reporte por alguna razón deseas ingresar el nombre del desarrollador, este es: ${username}, si quieres implementar la fecha de hoy en el reporte, esa es: ${datenow}
+        a)  **IDIOMA:** Español (México).
+        b)  **INVESTIGACIÓN WEB:** **CRUCIAL** buscar precios actualizados (México/USD), pero **prioriza opciones gratuitas o de bajo costo** adecuadas para freelancers. Indica fuentes/fechas si es posible.
+        c)  **ENFOQUE FREELANCE:** **INSISTE** en la perspectiva del desarrollador independiente o equipo muy pequeño en México. Calcula el **costo interno/oportunidad**, no costos de agencia. Evita gastos generales (overhead) innecesarios.
+        d)  **TONO:** Profesional, realista, pero también **orientado a la acción y eficiencia** para un freelancer. Sé conservador pero evita inflar innecesariamente para proyectos simples.
+        e)  **FORMATO:** Markdown.
+        f)  **SUGERENCIAS:** Propón alternativas eficientes (tecnológicas, de proceso) para un contexto freelance.
+        g)  **ADAPTACIÓN:** Si el proyecto descrito es inherentemente grande y complejo, indícalo, pero aún así calcula el costo interno bajo la óptica freelance (aunque sea alto) antes de sugerir que excede la capacidad típica freelance.
+    
+        NOTAS:
+    
+        El nombre del desarrollador que solicita esta estimación es: ${username}. La fecha de generación de este reporte es: ${datenow}.
         `;
         return prompt;
     }
