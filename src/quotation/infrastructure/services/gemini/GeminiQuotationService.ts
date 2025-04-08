@@ -14,8 +14,8 @@ if (!GEMINI_API_KEY) {
 }
 
 // Use stable model names from the 1.5 series
-const TEXT_MODEL_NAME = "gemini-2.0-flash";
-const VISION_MODEL_NAME = "gemini-2.0-flash";
+const TEXT_MODEL_NAME = "gemini-1.5-flash-latest";
+const VISION_MODEL_NAME = "gemini-1.5-flash-latest";
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "YOUR_API_KEY_FALLBACK"); // Fallback only for type safety if check above is removed
 
@@ -23,7 +23,7 @@ export class GeminiQuotationService implements IGeminiQuotationService {
 
     // Configuration for the generation request
     private generationConfig: GenerationConfig = {
-        temperature: 0.8, // Controls randomness (0=deterministic, 1=max creative)
+        temperature: 1.0, // Controls randomness (0=deterministic, 1=max creative)
         topK: 1,
         topP: 1,
         maxOutputTokens: 16384, // Adjust based on expected report length and model limits
